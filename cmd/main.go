@@ -36,12 +36,25 @@ func main() {
 	}
 
 	{
+		// router := ginn.New()
+
+		// router.GET("/", defaultHandler)
+		// router.GET("/hello", helloHandler)
+
+		// router.Run(":8002")
+	}
+
+	{
 		router := ginn.New()
 
-		router.GET("/", defaultHandler)
-		router.GET("/hello", helloHandler)
+		router.GET("/ping", func(ctx *ginn.Context) {
+			ctx.JSON(http.StatusOK, ginn.H{
+				"status":  0,
+				"message": "ok",
+			})
+		})
 
-		router.Run(":8002")
+		router.Run(":8003")
 	}
 
 }
