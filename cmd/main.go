@@ -45,16 +45,39 @@ func main() {
 	}
 
 	{
-		router := ginn.New()
+		// router := ginn.New()
 
+		// router.GET("/ping", func(ctx *ginn.Context) {
+		// 	ctx.JSON(http.StatusOK, ginn.H{
+		// 		"status":  0,
+		// 		"message": "ok",
+		// 	})
+		// })
+
+		// router.Run(":8003")
+	}
+
+	{
+		router := ginn.New()
 		router.GET("/ping", func(ctx *ginn.Context) {
 			ctx.JSON(http.StatusOK, ginn.H{
 				"status":  0,
-				"message": "ok",
+				"message": "OK",
 			})
 		})
 
-		router.Run(":8003")
+		v1 := router.Group("/v1")
+
+		{
+			v1.GET("/user/register", func(ctx *ginn.Context) {
+				ctx.JSON(http.StatusOK, ginn.H{
+					"status":  0,
+					"message": "this is response of /v1/user/register",
+				})
+			})
+		}
+
+		router.Run(":8004")
 	}
 
 }
