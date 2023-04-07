@@ -58,7 +58,32 @@ func main() {
 	}
 
 	{
+		// router := ginn.New()
+		// router.GET("/ping", func(ctx *ginn.Context) {
+		// 	ctx.JSON(http.StatusOK, ginn.H{
+		// 		"status":  0,
+		// 		"message": "OK",
+		// 	})
+		// })
+
+		// v1 := router.Group("/v1")
+
+		// {
+		// 	v1.GET("/user/register", func(ctx *ginn.Context) {
+		// 		ctx.JSON(http.StatusOK, ginn.H{
+		// 			"status":  0,
+		// 			"message": "this is response of /v1/user/register",
+		// 		})
+		// 	})
+		// }
+
+		// router.Run(":8004")
+	}
+
+	{
 		router := ginn.New()
+		router.Use(mockGlobalLoggerMiddleware)
+
 		router.GET("/ping", func(ctx *ginn.Context) {
 			ctx.JSON(http.StatusOK, ginn.H{
 				"status":  0,
@@ -67,12 +92,24 @@ func main() {
 		})
 
 		v1 := router.Group("/v1")
+		v1.Use(mockLoggerMiddlewareV1)
 
 		{
 			v1.GET("/user/register", func(ctx *ginn.Context) {
 				ctx.JSON(http.StatusOK, ginn.H{
 					"status":  0,
 					"message": "this is response of /v1/user/register",
+				})
+			})
+		}
+
+		v2 := router.Group("/v2")
+		v2.Use(mockLoggerMiddlewareV2)
+		{
+			v2.GET("/user/register", func(ctx *ginn.Context) {
+				ctx.JSON(http.StatusOK, ginn.H{
+					"status":  0,
+					"message": "this is response of /v2/user/register",
 				})
 			})
 		}
@@ -91,4 +128,16 @@ func helloHandler(w http.ResponseWriter, req *http.Request) {
 	for k, v := range req.Header {
 		fmt.Fprintf(w, "Header[%v] = %v\n", k, v)
 	}
+}
+
+func mockGlobalLoggerMiddleware(ctx *ginn.Context) {
+	fmt.Println("this is mock logger middleware")
+}
+
+func mockLoggerMiddlewareV1(ctx *ginn.Context) {
+	fmt.Println("this is mock logger middleware v1")
+}
+
+func mockLoggerMiddlewareV2(ctx *ginn.Context) {
+	fmt.Println("this is mock logger middleware v2")
 }

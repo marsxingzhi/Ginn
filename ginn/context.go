@@ -14,6 +14,9 @@ type Context struct {
 
 	Method string
 	Path   string
+
+	handlers []HandlerFunc // 挂载到Context实例上的handler，包括中间件和路由映射的handler
+	index    int           // 执行到第几个handlers
 }
 
 func newContext(w http.ResponseWriter, req *http.Request) *Context {
@@ -22,6 +25,7 @@ func newContext(w http.ResponseWriter, req *http.Request) *Context {
 		Req:    req,
 		Method: req.Method,
 		Path:   req.URL.Path,
+		index:  -1,
 	}
 }
 
@@ -44,4 +48,11 @@ func (ctx *Context) JSON(code int, obj interface{}) {
 		http.Error(ctx.Writer, err.Error(), 500)
 	}
 
+}
+
+func (ctx *Context) Next() {
+	ctx.index++
+	for n := len(ctx.handlers); ctx.index < n; ctx.index++ {
+		ctx.handlers[ctx.index](ctx)
+	}
 }

@@ -82,15 +82,26 @@ func (r *router) handle(ctx *Context) {
 		key := ctx.Method + "_" + node.path
 
 		if handleFunc, ok := r.handlers[key]; ok {
-			handleFunc(ctx)
+			// handleFunc(ctx)
+			ctx.handlers = append(ctx.handlers, handleFunc)
 		} else {
-			ctx.Writer.WriteHeader(http.StatusNotFound)
-			fmt.Fprintf(ctx.Writer, "404 NOT FOUND, Please check method: \"%v\", path: \"%v\" is correct.\n", ctx.Method, ctx.Path)
+			// 	ctx.Writer.WriteHeader(http.StatusNotFound)
+			// 	fmt.Fprintf(ctx.Writer, "404 NOT FOUND, Please check method: \"%v\", path: \"%v\" is correct.\n", ctx.Method, ctx.Path)
+
+			ctx.handlers = append(ctx.handlers, errorHandler)
 		}
 
 	} else {
-		ctx.Writer.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(ctx.Writer, "404 NOT FOUND, Please check method: \"%v\", path: \"%v\" is correct.\n", ctx.Method, ctx.Path)
+		// ctx.Writer.WriteHeader(http.StatusNotFound)
+		// fmt.Fprintf(ctx.Writer, "404 NOT FOUND, Please check method: \"%v\", path: \"%v\" is correct.\n", ctx.Method, ctx.Path)
+		ctx.handlers = append(ctx.handlers, errorHandler)
 	}
 
+	ctx.Next()
+
+}
+
+func errorHandler(ctx *Context) {
+	ctx.Writer.WriteHeader(http.StatusNotFound)
+	fmt.Fprintf(ctx.Writer, "404 NOT FOUND, Please check method: \"%v\", path: \"%v\" is correct.\n", ctx.Method, ctx.Path)
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 )
 
 /**
@@ -21,32 +22,42 @@ type HandlerFunc func(*Context)
 
 type H map[string]interface{}
 
+/**
+TODO 按照现在的设计，Engine与RouterFroup是一一对应的，这个是有问题的，一个Engine可以包括多个RouterGroup
+*/
 type Engine struct {
 	// router map[string]HandlerFunc // path与handler的映射
 	// router *router
 	*RouterGroup
+	router *router
+	groups []*RouterGroup
 }
 
 // 分组
 type RouterGroup struct {
 	prefix      string // 一直累加
 	middlewares []HandlerFunc
-	router      *router
-}
-
-func (group *RouterGroup) Group(prefix string) *RouterGroup {
-	newGroup := &RouterGroup{
-		prefix:      group.prefix + prefix,
-		middlewares: group.middlewares,
-		router:      group.router,
-	}
-	return newGroup
+	// router      *router
+	engine *Engine // 所有的group共享一个Engine实例
 }
 
 func New() *Engine {
-	engine := &Engine{}
-	engine.RouterGroup = &RouterGroup{router: newRouter()}
+	engine := &Engine{router: newRouter()}
+	engine.RouterGroup = &RouterGroup{engine: engine}
+	engine.groups = append(engine.groups, engine.RouterGroup)
 	return engine
+}
+
+func (group *RouterGroup) Group(prefix string) *RouterGroup {
+	// 获取到当前group的engine实例
+	engine := group.engine
+
+	newGroup := &RouterGroup{
+		prefix: group.prefix + prefix,
+		engine: engine,
+	}
+	engine.groups = append(engine.groups, newGroup)
+	return newGroup
 }
 
 // key：method + path的结合
@@ -55,9 +66,10 @@ func (group *RouterGroup) addRouter(method string, path string, handler HandlerF
 	// engine.router[key] = handler
 
 	// 需要加上路由组的前缀
-	ablosutePath := group.prefix + path
-	log.Printf("addRouter | %s - %s", method, ablosutePath)
-	group.router.addRouter(method, ablosutePath, handler)
+	newPath := group.prefix + path
+	log.Printf("addRouter | %s - %s", method, newPath)
+	// group.router.addRouter(method, ablosutePath, handler)
+	group.engine.router.addRouter(method, newPath, handler)
 }
 
 func (gourp *RouterGroup) GET(path string, handler HandlerFunc) {
@@ -66,6 +78,10 @@ func (gourp *RouterGroup) GET(path string, handler HandlerFunc) {
 
 func (group *RouterGroup) POST(path string, handler HandlerFunc) {
 	group.addRouter("POST", path, handler)
+}
+
+func (group *RouterGroup) Use(middlewares ...HandlerFunc) {
+	group.middlewares = append(group.middlewares, middlewares...)
 }
 
 func (engine *Engine) Run(path string) error {
@@ -92,7 +108,26 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// 	fmt.Fprintf(w, "404 NOT FOUND, Please check method: \"%v\", path: \"%v\" is correct.\n", req.Method, req.URL.Path)
 	// }
 
+	// 加入中间件
+	var middlewares []HandlerFunc
+	// fmt.Printf("ServeHTTP | path: %v, engine.prefix: %v, middlewares: %v\n", req.URL.Path, engine.prefix, engine.middlewares)
+	// if strings.HasPrefix(req.URL.Path, engine.prefix) {
+	// 	// fmt.Printf("ServeHTTP | engine.prefix: %v, middlewares: %v\n", engine.prefix, engine.middlewares)
+	// 	fmt.Println("ServeHTTP | hasPrefix")
+	// 	middlewares = append(middlewares, engine.middlewares...)
+	// }
+
+	for _, group := range engine.groups {
+		fmt.Printf("ServeHTTP | path: %v, group.prefix: %v, middlewares: %v\n", req.URL.Path, group.prefix, group.middlewares)
+
+		if strings.HasPrefix(strings.TrimSpace(req.URL.Path), strings.TrimSpace(group.prefix)) {
+			fmt.Println("ServeHTTP | hasPrefix")
+			middlewares = append(middlewares, group.middlewares...)
+		}
+	}
+
 	ctx := newContext(w, req)
+	ctx.handlers = middlewares
 	engine.router.handle(ctx)
 
 }
