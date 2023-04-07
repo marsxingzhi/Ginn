@@ -45,6 +45,7 @@ func (r *router) getRoute(method, path string) *TrieNode {
 	}
 	vals := parsePath(path)
 	if node, exist := root.search(vals, 0); exist {
+		// TODO 处理 特殊字符
 		return node
 	}
 	return nil
@@ -58,6 +59,10 @@ func parsePath(path string) []string {
 	for _, item := range parts {
 		if item != "" {
 			res = append(res, item)
+			// "*filepath" 如果是这种样式的，就不用继续解析了
+			if item[0] == '*' {
+				break
+			}
 		}
 	}
 	return res

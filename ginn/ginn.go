@@ -48,6 +48,12 @@ func New() *Engine {
 	return engine
 }
 
+func Deafult() *Engine {
+	engine := New()
+	engine.Use(Recovery())
+	return engine
+}
+
 func (group *RouterGroup) Group(prefix string) *RouterGroup {
 	// 获取到当前group的engine实例
 	engine := group.engine

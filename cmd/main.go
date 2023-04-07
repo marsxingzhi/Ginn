@@ -7,8 +7,26 @@ import (
 	"marsxingzhi.github.com/ginn/ginn"
 )
 
+func test_recover() {
+	defer func() {
+		fmt.Println("defer func")
+
+		if err := recover(); err != nil {
+			fmt.Println("recover success")
+		}
+	}()
+
+	arr := []int{1, 2, 3}
+	fmt.Println(arr[4])
+	fmt.Println("after panic")
+}
+
 func main() {
 	fmt.Println("hello world")
+
+	// test_recover()
+
+	// fmt.Println("after recover")
 
 	// 使用http构造请求
 	{
@@ -81,10 +99,15 @@ func main() {
 	}
 
 	{
-		router := ginn.New()
+		// router := ginn.New()
+		router := ginn.Deafult()
 		router.Use(mockGlobalLoggerMiddleware)
 
 		router.GET("/ping", func(ctx *ginn.Context) {
+
+			arr := []int{1, 2, 3}
+			fmt.Println(arr[4])
+
 			ctx.JSON(http.StatusOK, ginn.H{
 				"status":  0,
 				"message": "OK",
